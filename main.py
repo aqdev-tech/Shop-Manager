@@ -593,12 +593,82 @@ async def get_daily_summary(date: Optional[str] = None, _: bool = Depends(verify
 # Export endpoint (stub)
 @app.get("/export/daily-summary")
 async def export_daily_summary(date: Optional[str] = None, _: bool = Depends(verify_pin)):
-    # This is a stub for PDF export functionality
-    return {
-        "message": "PDF export feature coming soon",
-        "data": "This would contain PDF data or download link",
-        "note": "Implement with reportlab or similar PDF library"
-    }
+    # Get summary data
+    if date:
+        try:
+            target_date = datetime.fromisoformat(date).date()
+        except:
+            raise HTTPException(status_code=400, detail="Invalid date format")
+    else:
+        target_date = datetime.now().date()
+    start_of_day = datetime.combine(target_date, datetime.min.time())
+    end_of_day = datetime.combine(target_date, datetime.max.time())
+
+    # Get daily sales
+    daily_sales = []
+    total_sales_amount = 0
+    sales_by_seller = {}
+
+    async for sale in sales_collection.find({
+        "timestamp": {"$gte": start_of_day, "$lte": end_of_day}
+    }):
+        daily_sales.append(sale)
+        total_sales_amount += sale["total_amount"]
+        seller = sale["sold_by"]
+        if seller not in sales_by_seller:
+            sales_by_seller[seller] = 0
+        sales_by_seller[seller] += sale["total_amount"]
+
+    # Get bottle statistics
+    total_bottles_taken = 0
+    total_bottles_returned = 0
+    async for bottle_data in bottles_collection.find():
+        total_bottles_taken += bottle_data.get("bottles_taken", 0)
+        total_bottles_returned += bottle_data.get("bottles_returned", 0)
+
+    # Generate PDF
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer)
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(100, 800, f"Daily Summary for {target_date.isoformat()}")
+    p.setFont("Helvetica", 12)
+    y = 780
+    p.drawString(100, y, f"Total Sales Amount: ₦{total_sales_amount:,}")
+    y -= 20
+    p.drawString(100, y, f"Bottles Taken: {total_bottles_taken}")
+    y -= 20
+    p.drawString(100, y, f"Bottles Returned: {total_bottles_returned}")
+    y -= 20
+    p.drawString(100, y, f"Outstanding Bottles: {total_bottles_taken - total_bottles_returned}")
+    y -= 30
+    p.setFont("Helvetica-Bold", 13)
+    p.drawString(100, y, "Sales by Seller:")
+    y -= 20
+    p.setFont("Helvetica", 12)
+    for seller, amount in sales_by_seller.items():
+        p.drawString(120, y, f"{seller}: ₦{amount:,}")
+        y -= 18
+    y -= 10
+    p.setFont("Helvetica-Bold", 13)
+    p.drawString(100, y, "Sales Details:")
+    y -= 20
+    p.setFont("Helvetica", 10)
+    for sale in daily_sales:
+        if y < 50:
+            p.showPage()
+            y = 800
+        if "items" in sale:
+            for item in sale["items"]:
+                p.drawString(110, y, f"{item['product_name']} x{item['quantity']} - ₦{item['total_amount']:,} ({sale['sold_by']})")
+                y -= 15
+        else:
+            p.drawString(110, y, f"{sale['product_name']} x{sale['quantity']} - ₦{sale['total_amount']:,} ({sale['sold_by']})")
+            y -= 15
+    p.save()
+    buffer.seek(0)
+    return StreamingResponse(buffer, media_type="application/pdf", headers={
+        "Content-Disposition": f"attachment; filename=daily_summary_{target_date.isoformat()}.pdf"
+    })
 
 # Receipt preview endpoint
 @app.get("/receipt/preview/{sale_id}")

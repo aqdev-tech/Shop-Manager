@@ -228,6 +228,7 @@
                                     <option value="">Walk-in</option>
                                     <!-- Populate with customers from backend -->
                                 </select>
+                                <input type="text" id="walkin-customer-name" placeholder="Enter walk-in customer name (optional)" class="w-full px-3 py-2 border border-gray-300 rounded-lg mt-2 hidden">
                             </div>
                             <div class="flex space-x-3">
                                 <button type="submit" class="flex-1 bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
@@ -274,6 +275,9 @@
                             <button id="load-summary-btn" class="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
                                 Load Summary
                             </button>
+                            <button id="export-summary-pdf-btn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                                Export PDF
+                            </button>
                         </div>
                     </div>
 
@@ -308,6 +312,28 @@
                         </div>
                         <button type="submit" class="w-full bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
                             Change PIN
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Add this inside the Settings Page, after Change PIN form, for Bottle Returns -->
+                <div class="max-w-md bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Return Bottles</h3>
+                    <form id="bottle-return-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
+                            <input type="text" id="bottle-product-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Bottles Returned</label>
+                            <input type="number" id="bottles-returned" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Customer Name (optional)</label>
+                            <input type="text" id="bottle-customer-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+                        <button type="submit" class="w-full bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                            Record Return
                         </button>
                     </form>
                 </div>
@@ -779,7 +805,11 @@
             const saleData = {
                 items,
                 sold_by: document.getElementById('sold-by').value,
-                payment_method: document.getElementById('payment-method').value
+                payment_method: document.getElementById('payment-method').value,
+                customer_id: document.getElementById('customer-select').value || null,
+                customer_name: document.getElementById('customer-select').value === '' 
+                    ? document.getElementById('walkin-customer-name').value 
+                    : null
             };
             try {
                 await apiCall('/sales/multi', { // <-- FIXED ENDPOINT
@@ -1090,14 +1120,31 @@
                 loadCustomers();
             };
 
-            document.getElementById('payment-method').addEventListener('change', function() {
-                const customerSelect = document.getElementById('customer-select');
-                if (this.value === 'Credit') {
-                    customerSelect.required = true;
-                } else {
-                    customerSelect.required = false;
-                }
-            });
+            document.getElementById('customer-select').addEventListener('change', function() {
+    const customerSelect = document.getElementById('customer-select');
+    const walkinInput = document.getElementById('walkin-customer-name');
+    if (customerSelect.value === '') {
+        walkinInput.classList.remove('hidden');
+    } else {
+        walkinInput.classList.add('hidden');
+    }
+    if (this.value === 'Credit') {
+        customerSelect.required = true;
+    } else {
+        customerSelect.required = false;
+    }
+});
+
+            // Add this JS to handle the export button
+            document.getElementById('export-summary-pdf-btn').addEventListener('click', function() {
+    const date = document.getElementById('summary-date').value;
+    if (!date) {
+        showToast('Please select a date first', 'error');
+        return;
+    }
+    // Adjust the endpoint if your backend expects a date parameter
+    window.open(`${API_BASE}/export/daily-summary?date=${date}&token=${currentToken}`, '_blank');
+});
         });
 
         function barcodeHandler(data) {
@@ -1128,7 +1175,12 @@
             
             // Update customer list in customers page
             const customerList = document.getElementById('customer-list');
-            customerList.innerHTML = customers.map(c => `<li class="py-2 border-b last:border-b-0">${c.name} (${c.phone || ''})</li>`).join('');
+            customerList.innerHTML = customers.map(c => `
+            <li class="py-2 border-b last:border-b-0 flex justify-between items-center">
+                <span>${c.name} (${c.phone || ''})</span>
+                <button onclick="showCustomerBalance('${c.id}')" class="text-primary hover:underline text-xs">Balance</button>
+            </li>
+        `).join('');
         }
 
         document.addEventListener('DOMContentLoaded', loadCustomers);
