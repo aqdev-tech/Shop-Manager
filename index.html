@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Inventory & Sales Tracking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-2"></div>
+
+    <!-- Login Page -->
+    <div id="login-page" class="min-h-screen flex items-center justify-center px-4">
+        <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Smart Inventory</h1>
+                <p class="text-gray-600">Enter your PIN to continue</p>
+            </div>
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="pin" class="block text-sm font-medium text-gray-700 mb-2">PIN</label>
+                    <input type="password" id="pin" maxlength="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-center text-2xl tracking-widest" placeholder="••••" required>
+                </div>
+                <button type="submit" class="w-full bg-primary hover:bg-secondary text-white font-semibold py-3 px-4 rounded-lg transition duration-200">
+                    Login
+                </button>
+                <div class="text-center text-sm text-gray-500">
+                    Default PIN: 1234
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main-app" class="hidden">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-8">
+                        <h1 class="text-xl font-bold text-gray-900">Smart Inventory</h1>
+                        <div class="hidden md:flex space-x-6">
+                            <button class="nav-btn text-gray-600 hover:text-primary font-medium" data-page="dashboard">Dashboard</button>
+                            <button class="nav-btn text-gray-600 hover:text-primary font-medium" data-page="products">Products</button>
+                            <button class="nav-btn text-gray-600 hover:text-primary font-medium" data-page="sales">Sales</button>
+                            <button class="nav-btn text-gray-600 hover:text-primary font-medium" data-page="summary">Summary</button>
+                            <button class="nav-btn text-gray-600 hover:text-primary font-medium" data-page="settings">Settings</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="md:hidden" id="mobile-menu-btn">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                        <button id="logout-btn" class="text-gray-600 hover:text-danger font-medium">Logout</button>
+                    </div>
+                </div>
+                <!-- Mobile Menu -->
+                <div id="mobile-menu" class="hidden md:hidden pb-4 space-y-2">
+                    <button class="nav-btn block w-full text-left px-4 py-2 text-gray-600 hover:text-primary hover:bg-gray-50 rounded" data-page="dashboard">Dashboard</button>
+                    <button class="nav-btn block w-full text-left px-4 py-2 text-gray-600 hover:text-primary hover:bg-gray-50 rounded" data-page="products">Products</button>
+                    <button class="nav-btn block w-full text-left px-4 py-2 text-gray-600 hover:text-primary hover:bg-gray-50 rounded" data-page="sales">Sales</button>
+                    <button class="nav-btn block w-full text-left px-4 py-2 text-gray-600 hover:text-primary hover:bg-gray-50 rounded" data-page="summary">Summary</button>
+                    <button class="nav-btn block w-full text-left px-4 py-2 text-gray-600 hover:text-primary hover:bg-gray-50 rounded" data-page="settings">Settings</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Page Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Dashboard Page -->
+            <div id="dashboard-page" class="page-content">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Dashboard</h2>
+                    <p class="text-gray-600">Overview of your inventory and sales</p>
+                </div>
+
+                <!-- Low Stock Alert -->
+                <div id="low-stock-alert" class="hidden mb-6 bg-warning/10 border border-warning/20 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-warning mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <h4 class="font-semibold text-warning">Low Stock Alert</h4>
+                            <div id="low-stock-items" class="text-sm text-gray-700 mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Total Products</p>
+                                <p id="total-products" class="text-2xl font-semibold text-gray-900">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Today's Sales</p>
+                                <p id="today-sales" class="text-2xl font-semibold text-gray-900">₦-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-warning/10 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Outstanding Bottles</p>
+                                <p id="outstanding-bottles" class="text-2xl font-semibold text-gray-900">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Page -->
+            <div id="products-page" class="page-content hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Products</h2>
+                        <p class="text-gray-600">Manage your inventory</p>
+                    </div>
+                    <button id="add-product-btn" class="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                        Add Product
+                    </button>
+                </div>
+
+                <!-- Products Table -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Products will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Page -->
+            <div id="sales-page" class="page-content hidden">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Sales</h2>
+                    <p class="text-gray-600">Record new sales and view history</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Record Sale Form -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Record New Sale</h3>
+                        <form id="sales-form" class="space-y-4">
+                            <div id="sale-items-container">
+                                <!-- Sale item rows will be added here -->
+                            </div>
+                            <button type="button" id="add-sale-item-btn" class="bg-blue-100 text-blue-700 px-3 py-1 rounded mb-2">
+                                + Add Another Product
+                            </button>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Sold By</label>
+                                <input type="text" id="sold-by" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                                <select id="payment-method" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    <option value="Cash">Cash</option>
+                                    <option value="POS">POS</option>
+                                    <option value="Transfer">Transfer</option>
+                                    <option value="Credit">Credit</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Customer</label>
+                                <select id="customer-select" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    <option value="">Walk-in</option>
+                                    <!-- Populate with customers from backend -->
+                                </select>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button type="submit" class="flex-1 bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                                    Record Sale
+                                </button>
+                                <button type="button" id="undo-sale-btn" class="bg-danger hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                                    Undo Last
+                                </button>
+                            </div>
+                            <!-- Add this to your sales form -->
+                            <button type="button" id="scan-barcode-btn" class="bg-blue-100 text-blue-700 px-3 py-1 rounded mb-2">
+                                Scan Barcode
+                            </button>
+                            <div id="barcode-scanner" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#0008; z-index:1000;">
+                                <div id="barcode-scanner-area" style="width:100vw; height:80vh;"></div>
+                                <button onclick="stopBarcodeScanner()" class="bg-red-500 text-white px-4 py-2 rounded">Close</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Recent Sales -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Sales</h3>
+                        <div id="recent-sales" class="space-y-3 max-h-96 overflow-y-auto">
+                            <!-- Recent sales will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Page -->
+            <div id="summary-page" class="page-content hidden">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Daily Summary</h2>
+                    <p class="text-gray-600">Daily sales and inventory overview</p>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Date Selector -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center space-x-4">
+                            <label class="text-sm font-medium text-gray-700">Select Date:</label>
+                            <input type="date" id="summary-date" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <button id="load-summary-btn" class="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                                Load Summary
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Summary Content -->
+                    <div id="summary-content" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Will be populated with summary data -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settings-page" class="page-content hidden">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Settings</h2>
+                    <p class="text-gray-600">Manage your application settings</p>
+                </div>
+
+                <div class="max-w-md bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Change PIN</h3>
+                    <form id="change-pin-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Current PIN</label>
+                            <input type="password" id="current-pin" maxlength="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-center" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">New PIN</label>
+                            <input type="password" id="new-pin" maxlength="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-center" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New PIN</label>
+                            <input type="password" id="confirm-pin" maxlength="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-center" required>
+                        </div>
+                        <button type="submit" class="w-full bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                            Change PIN
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Customers Page -->
+            <div id="customers-page" class="page-content hidden">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Customers</h2>
+                    <form id="add-customer-form" class="mb-4 flex gap-2">
+                        <input id="customer-name" placeholder="Name" required class="border px-2 py-1 rounded">
+                        <input id="customer-phone" placeholder="Phone" class="border px-2 py-1 rounded">
+                        <input id="customer-email" placeholder="Email" class="border px-2 py-1 rounded">
+                        <button type="submit" class="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                            Add Customer
+                        </button>
+                    </form>
+                    <div id="customer-list" class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-2">
+                        <!-- Customer list will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="product-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="product-modal-title" class="text-lg font-semibold text-gray-900">Add Product</h3>
+                    <button id="close-product-modal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <form id="product-form" class="space-y-4">
+                    <input type="hidden" id="product-id">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
+                        <input type="text" id="product-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Unit Price (₦)</label>
+                        <input type="number" id="product-price" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                        <input type="number" id="product-quantity" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                    </div>
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="product-bottled" class="rounded border-gray-300 text-primary focus:ring-primary">
+                            <span class="ml-2 text-sm text-gray-700">Is bottled product</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Barcode</label>
+                        <input type="text" id="product-barcode" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                    <div class="flex space-x-3">
+                        <button type="submit" class="flex-1 bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                            Save Product
+                        </button>
+                        <button type="button" id="cancel-product" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-2 px-4 rounded-lg transition duration-200">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentToken = '';
+        let currentPage = 'dashboard';
+        let products = [];
+        let quaggaInitialized = false;
+
+        // API Configuration
+        const API_BASE = 'http://127.0.0.1:8000';
+
+        // Utility functions
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-blue-500';
+            
+            toast.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full`;
+            toast.textContent = message;
+            
+            document.getElementById('toast-container').appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        async function apiCall(endpoint, options = {}) {
+            const url = `${API_BASE}${endpoint}`;
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            
+            if (currentToken) {
+                headers['Authorization'] = `Bearer ${currentToken}`;
+            }
+
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API call failed:', error);
+                throw error;
+            }
+        }
+
+        // Authentication
+        async function login(pin) {
+            try {
+                const response = await apiCall('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ pin })
+                });
+                
+                currentToken = response.token;
+                showApp();
+                loadDashboard();
+                showToast('Login successful!', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function logout() {
+            currentToken = '';
+            document.getElementById('login-page').classList.remove('hidden');
+            document.getElementById('main-app').classList.add('hidden');
+            document.getElementById('pin').value = '';
+        }
+
+        function showApp() {
+            document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+        }
+
+        // Navigation
+        function showPage(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            // Show selected page
+            document.getElementById(`${pageName}-page`).classList.remove('hidden');
+            
+            // Update navigation active state
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-primary', 'font-semibold');
+                btn.classList.add('text-gray-600');
+            });
+            
+            document.querySelectorAll(`[data-page="${pageName}"]`).forEach(btn => {
+                btn.classList.remove('text-gray-600');
+                btn.classList.add('text-primary', 'font-semibold');
+            });
+            
+            currentPage = pageName;
+            
+            // Load page data
+            switch(pageName) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'products':
+                    loadProducts();
+                    break;
+                case 'sales':
+                    loadSalesPage();
+                    break;
+                case 'summary':
+                    loadSummaryPage();
+                    break;
+            }
+        }
+
+        
+
+        // Dashboard functions
+        async function loadDashboard() {
+            try {
+                // Load products for stats
+                const productsData = await apiCall('/products');
+                products = productsData;
+                document.getElementById('total-products').textContent = products.length;
+                
+                // Check for low stock
+                const lowStockProducts = products.filter(p => p.low_stock);
+                if (lowStockProducts.length > 0) {
+                    document.getElementById('low-stock-alert').classList.remove('hidden');
+                    document.getElementById('low-stock-items').innerHTML = 
+                        lowStockProducts.map(p => `${p.name} (${p.quantity} left)`).join(', ');
+                } else {
+                    document.getElementById('low-stock-alert').classList.add('hidden');
+                }
+
+                // Load today's summary
+                const today = new Date().toISOString().split('T')[0];
+                try {
+                    const summary = await apiCall('/summary/daily', {
+                        method: 'POST',
+                        body: JSON.stringify({ date: today })
+                    });
+                    
+                    document.getElementById('today-sales').textContent = `₦${summary.total_sales_amount.toLocaleString()}`;
+                    document.getElementById('outstanding-bottles').textContent = summary.outstanding_bottles;
+                } catch (error) {
+                    console.error('Failed to load daily summary:', error);
+                    document.getElementById('today-sales').textContent = '₦0';
+                    document.getElementById('outstanding-bottles').textContent = '0';
+                }
+
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+                showToast('Failed to load dashboard data', 'error');
+            }
+        }
+
+        // Products functions
+        async function loadProducts() {
+            try {
+                const data = await apiCall('/products');
+                products = data;
+                renderProductsTable();
+            } catch (error) {
+                console.error('Failed to load products:', error);
+                showToast('Failed to load products', 'error');
+            }
+        }
+
+        function renderProductsTable() {
+            const tbody = document.getElementById('products-table-body');
+            tbody.innerHTML = '';
+
+            if (products.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                            No products found. Add your first product to get started.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            products.forEach(product => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                
+                const stockBadge = product.low_stock 
+                    ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Low Stock</span>'
+                    : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">In Stock</span>';
+                
+                const typeBadge = product.is_bottled
+                    ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Bottled</span>'
+                    : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Regular</span>';
+
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${product.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">₦${product.unit_price.toLocaleString()}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${product.quantity}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">${typeBadge}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${stockBadge}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="editProduct('${product.id}')" class="text-primary hover:text-secondary mr-3">Edit</button>
+                        <button onclick="deleteProduct('${product.id}')" class="text-danger hover:text-red-600">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function showProductModal(productId = null) {
+            const modal = document.getElementById('product-modal');
+            const title = document.getElementById('product-modal-title');
+            const form = document.getElementById('product-form');
+
+            if (productId) {
+                const product = products.find(p => p.id === productId);
+                title.textContent = 'Edit Product';
+                document.getElementById('product-id').value = product.id;
+                document.getElementById('product-name').value = product.name;
+                document.getElementById('product-price').value = product.unit_price;
+                document.getElementById('product-quantity').value = product.quantity;
+                document.getElementById('product-bottled').checked = product.is_bottled;
+                document.getElementById('product-barcode').value = product.barcode || ''; // <-- Add this line
+            } else {
+                title.textContent = 'Add Product';
+                form.reset();
+                document.getElementById('product-id').value = '';
+                document.getElementById('product-barcode').value = ''; // <-- Add this line
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function hideProductModal() {
+            document.getElementById('product-modal').classList.add('hidden');
+            document.getElementById('product-modal').classList.remove('flex');
+        }
+
+        async function saveProduct(event) {
+            event.preventDefault();
+
+            const productId = document.getElementById('product-id').value;
+            const productData = {
+                name: document.getElementById('product-name').value,
+                unit_price: parseFloat(document.getElementById('product-price').value),
+                quantity: parseInt(document.getElementById('product-quantity').value),
+                is_bottled: document.getElementById('product-bottled').checked,
+                barcode: document.getElementById('product-barcode').value.trim() || null // <-- Add this line
+            };
+
+            try {
+                if (productId) {
+                    await apiCall(`/products/${productId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(productData)
+                    });
+                    showToast('Product updated successfully!', 'success');
+                } else {
+                    await apiCall('/products', {
+                        method: 'POST',
+                        body: JSON.stringify(productData)
+                    });
+                    showToast('Product added successfully!', 'success');
+                }
+
+                hideProductModal();
+                loadProducts();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function editProduct(productId) {
+            showProductModal(productId);
+        }
+
+        async function deleteProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!confirm(`Are you sure you want to delete "${product.name}"?`)) {
+                return;
+            }
+
+            try {
+                await apiCall(`/products/${productId}`, { method: 'DELETE' });
+                showToast('Product deleted successfully!', 'success');
+                loadProducts();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Sales functions
+        function createSaleItemRow(products) {
+            const row = document.createElement('div');
+            row.className = 'sale-item-row flex items-end space-x-2 mb-2';
+
+            // Product select
+            const productSelect = document.createElement('select');
+            productSelect.className = 'sale-product w-1/2 px-2 py-2 border border-gray-300 rounded-lg';
+            productSelect.required = true;
+            productSelect.innerHTML = '<option value="">Select product</option>' +
+                products.map(p => `<option value="${p.id}" data-bottled="${p.is_bottled}">${p.name} (₦${p.unit_price}) - ${p.quantity} left</option>`).join('');
+            row.appendChild(productSelect);
+
+            // Quantity input
+            const qtyInput = document.createElement('input');
+            qtyInput.type = 'number';
+            qtyInput.min = 1;
+            qtyInput.value = 1;
+            qtyInput.className = 'sale-quantity w-20 px-2 py-2 border border-gray-300 rounded-lg';
+            qtyInput.required = true;
+            row.appendChild(qtyInput);
+
+            // Bottle taken checkbox (hidden by default)
+            const bottleDiv = document.createElement('div');
+            bottleDiv.className = 'bottle-checkbox-container ml-2';
+            bottleDiv.style.display = 'none';
+            bottleDiv.innerHTML = `
+                <label class="flex items-center">
+                    <input type="checkbox" class="bottle-taken rounded border-gray-300 text-primary focus:ring-primary">
+                    <span class="ml-1 text-sm text-gray-700">Bottle taken</span>
+                </label>
+            `;
+            row.appendChild(bottleDiv);
+
+            // Remove row button
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'ml-2 text-danger hover:text-red-700 text-lg font-bold';
+            removeBtn.innerHTML = '&times;';
+            removeBtn.onclick = () => row.remove();
+            row.appendChild(removeBtn);
+
+            // Show/hide bottle checkbox based on product
+            productSelect.addEventListener('change', function() {
+                const selected = productSelect.options[productSelect.selectedIndex];
+                if (selected && selected.dataset.bottled === 'true') {
+                    bottleDiv.style.display = '';
+                } else {
+                    bottleDiv.style.display = 'none';
+                    bottleDiv.querySelector('.bottle-taken').checked = false;
+                }
+            });
+
+            return row;
+        }
+
+        // Initialize the sales form with one row
+        async function initSalesForm() {
+            const productsData = await apiCall('/products');
+            const container = document.getElementById('sale-items-container');
+            container.innerHTML = '';
+            container.appendChild(createSaleItemRow(productsData));
+
+            document.getElementById('add-sale-item-btn').onclick = () => {
+                container.appendChild(createSaleItemRow(productsData));
+            };
+        }
+
+        // Override the sales form submit to handle multiple items
+        document.getElementById('sales-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const rows = document.querySelectorAll('.sale-item-row');
+            const items = [];
+            rows.forEach(row => {
+                const product_id = row.querySelector('.sale-product').value;
+                const quantity = parseInt(row.querySelector('.sale-quantity').value);
+                const bottle_taken = row.querySelector('.bottle-taken') ? row.querySelector('.bottle-taken').checked : false;
+                if (product_id && quantity > 0) {
+                    items.push({ product_id, quantity, bottle_taken });
+                }
+            });
+            const saleData = {
+                items,
+                sold_by: document.getElementById('sold-by').value,
+                payment_method: document.getElementById('payment-method').value
+            };
+            try {
+                await apiCall('/sales/multi', { // <-- FIXED ENDPOINT
+                    method: 'POST',
+                    body: JSON.stringify(saleData)
+                });
+                showToast('Sale recorded successfully!', 'success');
+                await initSalesForm();
+                await loadRecentSales();
+                await loadProductsForSales();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+
+        // Call this when loading the sales page
+        async function loadSalesPage() {
+            await initSalesForm();
+            await loadRecentSales();
+        }
+
+        // Load and render recent sales
+        async function loadRecentSales() {
+            try {
+                const sales = await apiCall('/sales');
+                const container = document.getElementById('recent-sales');
+                container.innerHTML = '';
+
+                if (!sales || sales.length === 0) {
+                    container.innerHTML = `<div class="text-gray-500 text-center py-6">No sales recorded yet.</div>`;
+                    return;
+                }
+
+                sales.slice(0, 10).forEach(sale => {
+                    // Support both single and multi sale records
+                    if (sale.items) {
+                        // Multi-sale
+                        sale.items.forEach(item => {
+                            container.innerHTML += `
+                                <div class="border-b pb-2 mb-2">
+                                    <div class="flex justify-between">
+                                        <span class="font-semibold">${item.product_name}</span>
+                                        <span class="text-gray-700">₦${item.total_amount.toLocaleString()}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        Qty: ${item.quantity} | By: ${sale.sold_by} | ${new Date(sale.timestamp).toLocaleString()}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        // Single sale
+                        container.innerHTML += `
+                            <div class="border-b pb-2 mb-2">
+                                <div class="flex justify-between">
+                                    <span class="font-semibold">${sale.product_name}</span>
+                                    <span class="text-gray-700">₦${sale.total_amount.toLocaleString()}</span>
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    Qty: ${sale.quantity} | By: ${sale.sold_by} | ${new Date(sale.timestamp).toLocaleString()}
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            } catch (error) {
+                document.getElementById('recent-sales').innerHTML = `<div class="text-red-500 text-center py-6">Failed to load sales.</div>`;
+            }
+        }
+
+        // Summary functions
+        async function loadSummaryPage() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('summary-date').value = today;
+            await loadDailySummary(today);
+        }
+
+        async function loadDailySummary(date) {
+            try {
+                const summary = await apiCall('/summary/daily', {
+                    method: 'POST',
+                    body: JSON.stringify({ date })
+                });
+
+                renderSummary(summary);
+            } catch (error) {
+                console.error('Failed to load daily summary:', error);
+                showToast('Failed to load daily summary', 'error');
+            }
+        }
+
+        function renderSummary(summary) {
+            const container = document.getElementById('summary-content');
+            container.innerHTML = `
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Sales Overview</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Total Sales Amount:</span>
+                            <span class="font-semibold">₦${summary.total_sales_amount.toLocaleString()}</span>
+                        </div>
+                        <div class="border-t border-gray-200 pt-3">
+                            <h4 class="font-medium text-gray-900 mb-2">Sales by Seller:</h4>
+                            ${Object.entries(summary.sales_by_seller).map(([seller, amount]) => `
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">${seller}:</span>
+                                    <span>₦${amount.toLocaleString()}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Bottles Summary</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Bottles Taken:</span>
+                            <span class="font-semibold">${summary.bottles_taken}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Bottles Returned:</span>
+                            <span class="font-semibold">${summary.bottles_returned}</span>
+                        </div>
+                        <div class="flex justify-between border-t border-gray-200 pt-3">
+                            <span class="text-gray-600">Outstanding Bottles:</span>
+                            <span class="font-semibold text-orange-600">${summary.outstanding_bottles}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                ${summary.low_stock_products.length > 0 ? `
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 md:col-span-2">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Low Stock Products</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        ${summary.low_stock_products.map(product => `
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <h4 class="font-medium text-red-900">${product.name}</h4>
+                                <p class="text-sm text-red-700">Only ${product.quantity} left</p>
+                                <p class="text-xs text-red-600">₦${product.unit_price.toLocaleString()} each</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            `;
+        }
+
+        // Settings functions
+        async function changePIN(event) {
+            event.preventDefault();
+
+            const currentPin = document.getElementById('current-pin').value;
+            const newPin = document.getElementById('new-pin').value;
+            const confirmPin = document.getElementById('confirm-pin').value;
+
+            if (newPin !== confirmPin) {
+                showToast('New PIN and confirmation do not match', 'error');
+                return;
+            }
+
+            if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+                showToast('PIN must be exactly 4 digits', 'error');
+                return;
+            }
+
+            try {
+                await apiCall(`/auth/change-pin?old_pin=${currentPin}&new_pin=${newPin}`, {
+                    method: 'POST'
+                });
+
+                showToast('PIN changed successfully!', 'success');
+                document.getElementById('change-pin-form').reset();
+                currentToken = newPin; // Update current token
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function returnBottles() {
+            const product_name = document.getElementById('bottle-product-name').value;
+            const bottles_returned = parseInt(document.getElementById('bottles-returned').value);
+            const customer_name = document.getElementById('bottle-customer-name').value;
+            await apiCall('/bottles/return', {
+                method: 'POST',
+                body: JSON.stringify({ product_name, bottles_returned, customer_name })
+            });
+            showToast('Bottle return recorded!', 'success');
+        }
+
+        // Add these functions to your JS
+        function printReceipt(saleId) {
+            window.open(`${API_BASE}/receipt/preview/${saleId}?token=${currentToken}`, '_blank');
+        }
+        function downloadReceipt(saleId) {
+            window.open(`${API_BASE}/receipt/pdf/${saleId}?token=${currentToken}`, '_blank');
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Login form
+            document.getElementById('login-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const pin = document.getElementById('pin').value;
+                login(pin);
+            });
+
+            // Navigation
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const page = this.dataset.page;
+                    showPage(page);
+                });
+            });
+
+            // Mobile menu toggle
+            document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+                const mobileMenu = document.getElementById('mobile-menu');
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            // Logout
+            document.getElementById('logout-btn').addEventListener('click', logout);
+
+            // Product modal
+            document.getElementById('add-product-btn').addEventListener('click', () => showProductModal());
+            document.getElementById('close-product-modal').addEventListener('click', hideProductModal);
+            document.getElementById('cancel-product').addEventListener('click', hideProductModal);
+            document.getElementById('product-form').addEventListener('submit', saveProduct);
+
+            // Sales form
+            document.getElementById('sales-form').addEventListener('submit', recordSale);
+            document.getElementById('undo-sale-btn').addEventListener('click', undoLastSale);
+            
+            // Product selection change for sales
+            document.getElementById('sale-product').addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const bottleContainer = document.getElementById('bottle-checkbox-container');
+                
+                if (selectedOption.dataset.bottled === 'true') {
+                    bottleContainer.classList.remove('hidden');
+                } else {
+                    bottleContainer.classList.add('hidden');
+                    document.getElementById('bottle-taken').checked = false;
+                }
+            });
+
+            // Summary date change
+            document.getElementById('load-summary-btn').addEventListener('click', function() {
+                const date = document.getElementById('summary-date').value;
+                if (date) {
+                    loadDailySummary(date);
+                }
+            });
+
+            // Settings form
+            document.getElementById('change-pin-form').addEventListener('submit', changePIN);
+
+            // Close modal on outside click
+            document.getElementById('product-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideProductModal();
+                }
+            });
+
+            // Barcode scanner
+            document.getElementById('scan-barcode-btn').addEventListener('click', () => {
+                document.getElementById('barcode-scanner').style.display = 'block';
+                if (quaggaInitialized) {
+                    Quagga.start();
+                    return;
+                }
+                Quagga.init({
+                    inputStream: {
+                        name: "Live",
+                        type: "LiveStream",
+                        target: document.getElementById('barcode-scanner-area'),
+                        constraints: {
+                            facingMode: "environment"
+                        }
+                    },
+                    decoder: {
+                        readers: ["ean_reader", "code_128_reader", "upc_reader"]
+                    }
+                }, function(err) {
+                    if (err) {
+                        alert("Camera error: " + err);
+                        document.getElementById('barcode-scanner').style.display = 'none';
+                        return;
+                    }
+                    quaggaInitialized = true;
+                    Quagga.start();
+                });
+                Quagga.onDetected(barcodeHandler);
+            });
+
+            // Customer form
+            document.getElementById('add-customer-form').onsubmit = async function(e) {
+                e.preventDefault();
+                await apiCall('/customers', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name: document.getElementById('customer-name').value,
+                        phone: document.getElementById('customer-phone').value,
+                        email: document.getElementById('customer-email').value
+                    })
+                });
+                loadCustomers();
+            };
+
+            document.getElementById('payment-method').addEventListener('change', function() {
+                const customerSelect = document.getElementById('customer-select');
+                if (this.value === 'Credit') {
+                    customerSelect.required = true;
+                } else {
+                    customerSelect.required = false;
+                }
+            });
+        });
+
+        function barcodeHandler(data) {
+            const code = data.codeResult.code;
+            Quagga.offDetected(barcodeHandler);
+            Quagga.stop();
+            document.getElementById('barcode-scanner').style.display = 'none';
+            // Fetch product by barcode and auto-select in sales form
+            apiCall(`/products/barcode/${code}`).then(product => {
+                // Find the first sale row and set the product select
+                const select = document.querySelector('.sale-product');
+                if (select) select.value = product.id;
+                showToast(`Product "${product.name}" selected!`, 'success');
+            }).catch(() => showToast('Product not found for barcode', 'error'));
+        }
+
+        function stopBarcodeScanner() {
+            if (quaggaInitialized) Quagga.stop();
+            document.getElementById('barcode-scanner').style.display = 'none';
+        }
+
+        // Customer functions
+        async function loadCustomers() {
+            const customers = await apiCall('/customers');
+            const select = document.getElementById('customer-select');
+            select.innerHTML = '<option value="">Walk-in</option>' +
+                customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            
+            // Update customer list in customers page
+            const customerList = document.getElementById('customer-list');
+            customerList.innerHTML = customers.map(c => `<li class="py-2 border-b last:border-b-0">${c.name} (${c.phone || ''})</li>`).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', loadCustomers);
+
+        // Initialize app
+        showPage('dashboard');
+
+        async function showCustomerBalance(customerId) {
+            const res = await apiCall(`/customers/${customerId}/balance`);
+            alert(`Outstanding balance: ₦${res.outstanding_balance}`);
+        }
+    </script>
+    <script src="https://unpkg.com/@ericblade/quagga2@1.2.6/dist/quagga.min.js"></script>
+</body>
+</html>
